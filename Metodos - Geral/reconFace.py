@@ -89,7 +89,7 @@ def verificar_face():
 
         if img_ref is None:
             # se não estiver no Redis, pega do banco
-            cursor.execute("SELECT url FROM Imagem WHERE id_operario = %s", (user_id,))
+            cursor.execute("SELECT imagem_url FROM operario WHERE id = %s", (user_id,))
             resultado = cursor.fetchone()
             if not resultado:
                 return jsonify({"resultado": False, "erro": "Usuário sem imagem de referência."})
