@@ -127,11 +127,3 @@ def verificar_face():
         return jsonify({"resultado": False, "erro": str(e)}), 500  # retorna erro se algo falhar
 
 
-# ======================================
-# Iniciação do Flask
-# ======================================
-if __name__ == "__main__":
-    app.run(
-        host=os.getenv("FLASK_HOST", "0.0.0.0"),  # permite acesso externo
-        port=int(os.getenv("FLASK_PORT", 8000))  # porta do servidor
-    )

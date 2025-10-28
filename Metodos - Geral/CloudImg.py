@@ -50,11 +50,3 @@ def upload_image():
         return jsonify({"error": str(e)}), 500  # retorna erro caso algo falhe
 
 
-# ======================================
-# Iniciação do Flask
-# ======================================
-if __name__ == "__main__":
-    app.run(
-        host=os.getenv("FLASK_HOST", "0.0.0.0"),  # permite acesso externo
-        port=int(os.getenv("FLASK_PORT", 5000))   # porta do servidor
-    )
