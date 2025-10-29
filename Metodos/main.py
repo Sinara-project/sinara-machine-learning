@@ -1,5 +1,5 @@
 # ======================================
-# main.py — App 
+# main.py — App principal Flask
 # ======================================
 
 from flask import Flask
@@ -8,12 +8,12 @@ import os
 
 app = Flask(__name__)
 
-# Registra os Blueprints (rotas de cada módulo)
+# Registra o módulo de upload de imagens
 app.register_blueprint(cloudimg_bp, url_prefix="/cloud")
 
 @app.route("/")
 def home():
-    return "API Flask ativa — módulo: /cloud"
+    return "API Flask ativa — módulo /cloud funcionando!"
 
 if __name__ == "__main__":
     app.run(

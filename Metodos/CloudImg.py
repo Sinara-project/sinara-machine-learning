@@ -1,52 +1,47 @@
 # ======================================
-# Importação de bibliotecas
+# CloudImg.py — Módulo de Upload Cloudinary
 # ======================================
 
-from flask import Flask, request, jsonify  
-import cloudinary 
-import cloudinary.uploader 
-from dotenv import load_dotenv 
-import os 
+from flask import Blueprint, request, jsonify
+import cloudinary
+import cloudinary.uploader
+from dotenv import load_dotenv
+import os
 
-load_dotenv() 
-
+load_dotenv()
 
 # ======================================
-# Conexão do Cloudinary
+# Configuração do Cloudinary
 # ======================================
 cloudinary.config(
-    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),  # nome da nuvem
-    api_key=os.getenv("CLOUDINARY_API_KEY"),        # chave da API
-    api_secret=os.getenv("CLOUDINARY_API_SECRET")   # segredo da API
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET")
 )
 
-app = Flask(__name__)  # cria o servidor Flask
-
+# ======================================
+# Criação da Blueprint
+# ======================================
+cloudimg_bp = Blueprint("cloudimg_bp", __name__)
 
 # ======================================
 # Rota de upload de imagem
 # ======================================
-@app.route("/upload_image", methods=["POST"])
+@cloudimg_bp.route("/upload_image", methods=["POST"])
 def upload_image():
     """Recebe uma imagem do app e retorna apenas a URL do Cloudinary."""
     try:
-        # verifica se a imagem foi enviada
         if "image" not in request.files:
             return jsonify({"error": "Nenhuma imagem enviada."}), 400
 
-        image = request.files["image"]  # pega o arquivo enviado
-
-        # faz o upload da imagem para o Cloudinary
+        image = request.files["image"]
         response = cloudinary.uploader.upload(image)
-        url = response.get("secure_url")  # pega a URL da imagem no Cloudinary
+        url = response.get("secure_url")
 
-        # verifica se a URL foi gerada
         if not url:
             return jsonify({"error": "Erro ao fazer upload da imagem."}), 500
 
-        return jsonify({"url": url}), 200  # retorna a URL da imagem
+        return jsonify({"url": url}), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500  # retorna erro caso algo falhe
-
-
+        return jsonify({"error": str(e)}), 500
