@@ -1,13 +1,29 @@
+# =========================
+# Importação de bibliotecas
+# =========================
+
 import psycopg2
 from datetime import datetime
 import json
 import os
 from dotenv import load_dotenv
+import sys
+
 
 load_dotenv()
 
+
 # =========================
-# CONEXÕES
+# Log para automação
+# =========================
+
+log_file = r"C:\\Users\\rafaellaantunes-ieg\\OneDrive - Instituto Germinare\\GERMINARE TECH 2025\\INTERDICIPLINAR\\CienciaDados-FaceRecon\\sinara-machine-learning\\CienciaDados-TransferBD\\log_execucao.txt"
+sys.stdout = open(log_file, "a")
+sys.stderr = sys.stdout
+
+
+# =========================
+# Conexões com bancos de dados
 # =========================
 origem = psycopg2.connect(
     dbname=os.getenv("DB_ORIGEM_NAME"),
@@ -31,7 +47,7 @@ cur_destino = destino.cursor()
 map_plano = {"GRÁTIS": 1, "MENSAL": 2, "ANUAL": 3}
 
 # =========================
-# FUNÇÃO DE LOG
+# Função de log para o banco
 # =========================
 def log_insert(tabela, dados):
     cur_destino.execute("""
@@ -40,21 +56,23 @@ def log_insert(tabela, dados):
     """, ("migração_rpa", tabela, "INSERT", "rpa_script", None, json.dumps(dados)))
 
 # =========================
-# INSERE SE NÃO EXISTE
+# Função para inserir registros únicos
 # =========================
 def inserir_unico(query_check, params_check, query_insert, params_insert, tabela, dados_log):
     cur_destino.execute(query_check, params_check)
     existe = cur_destino.fetchone()
     if not existe:
-        cur_destino.execute(query_insert, params_insert)
+        if isinstance(params_insert, dict):
+            cur_destino.execute(query_insert, params_insert)
+        else:
+            cur_destino.execute(query_insert, params_insert)
         log_insert(tabela, dados_log)
         return True
     else:
-        print(f"Registro duplicado ignorado em '{tabela}': {params_check}")
         return False
 
 # =========================
-# GARANTE PLANOS EXISTENTES
+# Garante que os planos existam no destino
 # =========================
 cur_destino.execute("SELECT id FROM Planos;")
 planos_existentes = {row[0] for row in cur_destino.fetchall()}
@@ -80,7 +98,7 @@ for plano in planos_para_inserir:
         })
 
 # =========================
-# MIGRA EMPRESAS
+# Migra empresas
 # =========================
 cur_origem.execute("""
     SELECT id, cnpj, nome, email_corporativo, telefone, ramo_atuacao, tipo_assinatura
@@ -92,14 +110,14 @@ for emp in cur_origem.fetchall():
     id_plano = map_plano.get((tipo or "GRÁTIS").upper(), 1)
 
     dados_emp = {
-        "CNPJ": cnpj.strip(),
-        "Nome": nome,
-        "Email": email,
+        "CNPJ": cnpj.strip() if cnpj else "",
+        "Nome": nome or "Sem nome",
+        "Email": email or "",
         "Senha": "senha_padrao",
         "Senha_Area_Restrita": "senha_restrita",
         "Codigo": f"EMP{id_emp:04}",
         "Ramo_Atuacao": ramo or "Não informado",
-        "Telefone": telefone,
+        "Telefone": telefone or "",
         "ID_Plano": id_plano
     }
 
@@ -116,23 +134,22 @@ for emp in cur_origem.fetchall():
     )
 
 # =========================
-# MIGRA ADMINISTRADORES
+# Migra administradores
 # =========================
 cur_origem.execute("""
-    SELECT cpf, nome, email_admin
+    SELECT cpf, nome, email_admin, senha
     FROM administrador;
 """)
 
 for adm in cur_origem.fetchall():
-    cpf, nome, email = adm
+    cpf, nome, email, senha = adm
 
     if not cpf or str(cpf).strip().lower() in ["none", "null", ""]:
-        print(f"Admin ignorado: CPF ausente ou inválido → Nome: {nome}")
         continue
 
     dados_user = {
         "Nome": nome or "Sem nome",
-        "Senha": "senha_padrao",
+        "Senha": senha or "senha_padrao",
         "Ativo": True
     }
 
@@ -149,18 +166,17 @@ for adm in cur_origem.fetchall():
     )
 
 # =========================
-# MIGRA OPERÁRIOS 
+# Migra operários
 # =========================
 cur_origem.execute("""
-    SELECT cpf, nome, email_operario, cargo_operario, horario_trabalho, id_empresa
+    SELECT cpf, nome, email_operario, cargo_operario, horario_trabalho, id_empresa, senha
     FROM operario;
 """)
 
 for op in cur_origem.fetchall():
-    cpf, nome, email, cargo, horario, id_emp = op
+    cpf, nome, email, cargo, horario, id_emp, senha = op
 
     if not cpf or str(cpf).strip().lower() in ["none", "null", ""]:
-        print(f"Operário ignorado: CPF ausente ou inválido → Nome: {nome}")
         continue
 
     try:
@@ -173,7 +189,7 @@ for op in cur_origem.fetchall():
         "CPF": str(cpf).strip(),
         "Nome": nome or "Sem nome",
         "Email": email or f"{cpf}@sememail.com",
-        "Senha": "senha_padrao",
+        "Senha": senha or "senha_padrao",
         "Cargo": cargo or "Não informado",
         "Setor": "Operacional",
         "Ferias": False,
@@ -197,7 +213,7 @@ for op in cur_origem.fetchall():
     # Inserir em Usuarios
     dados_user = {
         "Nome": nome or "Sem nome",
-        "Senha": "senha_padrao",
+        "Senha": senha or "senha_padrao",
         "Ativo": True
     }
 
@@ -215,7 +231,7 @@ for op in cur_origem.fetchall():
 
 
 # =========================
-# FINALIZA
+# Finalização das conexões
 # =========================
 destino.commit()
 cur_origem.close()

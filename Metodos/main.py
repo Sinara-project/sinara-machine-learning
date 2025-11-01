@@ -1,10 +1,14 @@
 # ======================================
-# main.py — App principal Flask
+# Conexão com Flask
 # ======================================
 
 from flask import Flask
 from CloudImg import cloudimg_bp
 import os
+from dotenv import load_dotenv
+
+# Carrega variáveis do .env
+load_dotenv()
 
 app = Flask(__name__)
 
