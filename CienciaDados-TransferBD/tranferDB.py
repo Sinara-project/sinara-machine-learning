@@ -71,9 +71,9 @@ def inserir_unico(query_check, params_check, query_insert, params_insert, tabela
     else:
         return False
 
-# =========================
+# ========================================
 # Garante que os planos existam no destino
-# =========================
+# ========================================
 cur_destino.execute("SELECT id FROM Planos;")
 planos_existentes = {row[0] for row in cur_destino.fetchall()}
 
